@@ -1,9 +1,9 @@
 definition(
-    name: "My First App",
-    namespace: "MyNamespace",
-    author: "My Name",
-    description: "A simple example app",
-    category: "Convenience",
+    name: "Simple Battery Monitor",
+    namespace: "tljungber",
+    author: "Tobey Ljungberg",
+    description: "Simple battery app",
+    category: "Utility",
     iconUrl: "",
     iconX2Url: ""
 )
