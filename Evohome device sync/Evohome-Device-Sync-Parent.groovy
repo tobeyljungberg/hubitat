@@ -34,7 +34,7 @@ def mainPage() {
             display()
 
             section ("") {
-                app(name: "EvoHomeDeviceSync", appName: "Evohome Device Sync", namespace: "tljungberg", title: "Add a new sync app", multiple: true)
+                app(name: "EvoHomeDeviceSync", appName: "Evohome Device Sync Child", namespace: "tljungberg", title: "Add a new sync app", multiple: true)
             }
 
         }
