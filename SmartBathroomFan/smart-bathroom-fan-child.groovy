@@ -86,6 +86,8 @@ def updated() {
 
 
 def initialize() {
+    state.fanOn = null
+    fanSwitch.off()
     subscribe(sensor, "humidity", eventHandler)
     updateAmbientHumidity()
     createSchedule()
@@ -192,7 +194,7 @@ def log(msg) {
 }
 
 def setVersion(){
-		state.version = "1.0"
+		state.version = "0.1"
 		state.internalName = "SmartBathroomFan"
     state.externalName = "Smart Bathroom Fan"
 }
