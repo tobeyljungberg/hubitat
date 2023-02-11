@@ -159,6 +159,11 @@ def fillHumidityArrayWithCurrent() {
 def updateAmbientHumidity() {
     updateState()
 
+   if (state.fanOn != null) {
+    log("Fan is on, pausing humidity updates.")
+   } else if (state.fanOn != null) 
+   
+   {
     def q = state.ambientHumidity as Queue
     q.add(sensor.currentHumidity)
 
@@ -169,6 +174,7 @@ def updateAmbientHumidity() {
     Float rollingAverage = state.ambientHumidity.sum() / state.ambientHumidity.size()
     Float triggerPoint = rollingAverage + humidityHigh
     log("Rolling average: ${rollingAverage.round(1)}% - Currently ${sensor.currentHumidity}% - Trigger at ${triggerPoint.round(1)}%.")
+   } 
 }
 
 
@@ -186,7 +192,7 @@ def log(msg) {
 }
 
 def setVersion(){
-		state.version = "0.1"
+		state.version = "1.0"
 		state.internalName = "SmartBathroomFan"
     state.externalName = "Smart Bathroom Fan"
 }
