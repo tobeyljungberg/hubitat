@@ -1,17 +1,17 @@
 definition(
-    name: "Simple Battery Monitor",
-    namespace: "tobeyljungberg",
-    author: "Tobey Ljungberg",
-    descriptiion: "A simple app to monitor battery levels",
-    category: "Utility",
+    name: "My First App",
+    namespace: "MyNamespace",
+    author: "My Name",
+    description: "A simple example app",
+    category: "Convenience",
     iconUrl: "",
-    iconX2Url: "",
+    iconX2Url: ""
 )
 
-preference {
-    page(name: "mainPage", title: "Settings", install: true, uninstall: true) {
+preferences {
+    page(name: "mainPage", title: "My Page", install: true, uninstall: true) {
         section {
-            paragraph "Test!"
+            paragraph "Hello, world!"
         }
     }
 }
@@ -24,6 +24,4 @@ def updated() {
     log.trace "updated()"
 }
 
-def uninstalled() {
-    log.trace "uninstalled()"
-}
+def uninstalled() {}
