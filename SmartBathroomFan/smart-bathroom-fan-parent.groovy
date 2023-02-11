@@ -58,7 +58,7 @@ def installCheck() {
 
 
 def setVersion() {
-		state.version = "0.1"
+		state.version = "1.0"
     state.internalName = "SmartBathroomFanControllers"
     state.externalName = "Smart Bathroom Fan Controllers"
 }

@@ -163,7 +163,7 @@ def updateAmbientHumidity() {
 
    if (state.fanOn != null) {
     log("Fan is on, pausing humidity updates.")
-   } else if (state.fanOn != null) 
+   } else if (state.fanOn == null) 
    
    {
     def q = state.ambientHumidity as Queue
@@ -194,7 +194,7 @@ def log(msg) {
 }
 
 def setVersion(){
-		state.version = "0.1"
+		state.version = "1.0"
 		state.internalName = "SmartBathroomFan"
     state.externalName = "Smart Bathroom Fan"
 }
