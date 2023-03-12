@@ -22,9 +22,13 @@ def prefPage() {
         section("") {
             label title: "Enter a name for the child app", required: true
         }
+        section("Device Type") {
+            paragraph "Leave switch off if your virtual device is a thermostat, this will create a two way sync app. Leave on if your target device is a virtual temp sensor, this will create a one way sync app."
+            input "istempsense", "bool", title: "Target device type Tempsensor?"
+        }
         section("Device Selection") {
             input "evohomezone", "capability.temperatureMeasurement", title: "Evohome Zone:", required: true
-            input "thermostat", "capability.thermostat", title: "Virtual Thermostat:", required: true
+            input "vdevicetarget", "capability.temperatureMeasurement", title: "Virtual Device Target:", required: true
         }
     }
 }
@@ -41,48 +45,65 @@ def updated() {
 def initialize() {
     log.debug "Clearing old subscriptons."
     unsubscribe()
+    if (istempsense == false) {
+        log.debug "Target device is thermostat."
+    } else if (istempsense == true) {
+        log.debug "Target device is temperature sensor."
+    }
     log.debug "Setting allowed states on virtual device."
-    thermostat.setSupportedThermostatModes('["heat","off"]')
-    log.debug "Populating virtual thermostat starting values."
+    if (istempsense == false) {
+    vdevicetarget.setSupportedThermostatModes('["heat","off"]')
+    } else if (istempsense == true) {
+        log.debug "Skipping state setting as target is not thermostat."
+    }
+    log.debug "Populating virtual device starting values."
     def temp = evohomezone.currentValue("temperature")
     def heatset = evohomezone.currentValue("heatingSetpoint")
     def thermmode = evohomezone.currentValue("thermostatMode")
     def thermopmode = evohomezone.currentValue("thermostatOperatingState")
-    thermostat.setTemperature(temp)
-    thermostat.setHeatingSetpoint(heatset)
+    if (istempsense == false) {
+    vdevicetarget.setTemperature(temp)
+    vdevicetarget.setHeatingSetpoint(heatset)
     if (thermmode == "auto") {
-            thermostat.setThermostatMode('heat')
+            vdevicetarget.setThermostatMode('heat')
         } else if (thermmode == "heat") {
-            thermostat.setThermostatMode('heat')
+            vdevicetarget.setThermostatMode('heat')
         } else if (thermmode == "off") {
-            thermostat.setThermostatMode('off')
+            vdevicetarget.setThermostatMode('off')
     }
-    thermostat.setThermostatOperatingState(thermopmode)
+    vdevicetarget.setThermostatOperatingState(thermopmode)
+    } else if (istempsense == true) {
+        vdevicetarget.setTemperature(temp)
+    }
     log.debug "Creating event subscriptions."
+    if (istempsense == false) {
     subscribe(evohomezone, "temperature", evohomeHandler)
     subscribe(evohomezone, "heatingSetpoint", evohomeHandler)
     subscribe(evohomezone, "thermostatMode", evohomeHandler)
     subscribe(evohomezone, "thermostatOperatingState", evohomeHandler)
     subscribe(thermostat, "heatingSetpoint", thermostatHandler)
     subscribe(thermostat, "thermostatMode", thermostatHandler)
+    } else if (istempsense == true) {
+    subscribe(evohomezone, "temperature", evohomeTempHandler)
+    }
 }
 
 def evohomeHandler(evt) {
     log.debug "evohomeHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
     if (evt.name == "temperature") {
-    thermostat.setTemperature(evt.value)
+    vdevicetarget.setTemperature(evt.value)
     } else if (evt.name == "heatingSetpoint") {
-    thermostat.setHeatingSetpoint(evt.value)
+    vdevicetarget.setHeatingSetpoint(evt.value)
     } else if (evt.name == "thermostatMode") {
         if (evt.value == "auto") {
-            thermostat.setThermostatMode('heat')
+            vdevicetarget.setThermostatMode('heat')
         } else if (evt.value == "heat") {
-            thermostat.setThermostatMode('heat')
+            vdevicetarget.setThermostatMode('heat')
         } else if (evt.value == "off") {
-            thermostat.setThermostatMode('off')
+            vdevicetarget.setThermostatMode('off')
     }
     } else if (evt.name == "thermostatOperatingState") {
-        thermostat.setThermostatOperatingState(evt.value)
+        vdevicetarget.setThermostatOperatingState(evt.value)
     }
 }
 
@@ -100,4 +121,10 @@ def thermostatHandler(evt) {
             evohomezone.setThermostatMode('off')
     }
     }
+}
+
+def evohomeTempHandler(evt) {
+    log.debug "evohomeTempHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+    vdevicetarget.setTemperature(evt.value)
+    
 }
