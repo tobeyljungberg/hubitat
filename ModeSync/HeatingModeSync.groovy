@@ -33,27 +33,27 @@ def uninstalled() {
 }
 
 def initialize() {
-    log.debug "Current mode is: ${location.mode}"
-    log.debug "Current Evohome Mode is: ${syncdevice.currentValue("thermostatMode")}"
+    log.debug "Current location mode is: ${location.mode}"
+    log.debug "Current Evohome mode is: ${syncdevice.currentValue("thermostatMode")}"
     log.debug "Clearing old subscription"
     unsubscribe()
     subscribe (location, "mode", modeEventHandler)
 }
 
 def modeEventHandler(evt) {
-    log.debug "Mode changed to: ${location.mode}"
+    log.debug "Location mode was changed to: ${location.mode}"
     if (location.mode == "Away") {
     if (syncdevice.currentValue("thermostatMode") == "off") {
     log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
     } else if (syncdevice.currentValue("thermostatMode") == "auto") {
-        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and mode changed to ${location.mode}, setting heating to away."
+        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to away."
         syncdevice.setThermostatMode('away')
     }
     } else if (location.mode != "Away") {
     if (syncdevice.currentValue("thermostatMode") == "off") {
     log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
     } else if (syncdevice.currentValue("thermostatMode") == "away") {
-        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and mode changed to ${location.mode}, setting heating to auto."
+        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to auto."
         syncdevice.setThermostatMode('auto')
     }
 }
