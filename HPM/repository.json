@@ -21,6 +21,16 @@
         "Tools & Utilities"
       ],
       "id": "aa64c5aa-0cad-4b97-895b-ceba4a823c78"
+    },
+    {
+      "name": "Smart Bathroom fan",
+      "category": "Utility",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/SmartBathroomFan/PackageManifest.json",
+      "description": "Controls fan based on rolling humidity average.",
+      "tags": [
+        "Tools & Utilities"
+      ],
+      "id": "8b431248-3747-49ca-b416-f97de136b95f"
     }
   ]
 }
