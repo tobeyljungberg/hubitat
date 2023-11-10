@@ -5,7 +5,7 @@
     {
       "name": "Heating Mode Sync",
       "category": "Utility",
-      "location": "https://github.com/tobeyljungberg/hubitat/blob/main/ModeSync/PackageManifest.json",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/ModeSync/PackageManifest.json",
       "description": "Allows you to change the EvoHome heating mode based on the hub mode.",
       "tags": [
         "Tools & Utilities"
