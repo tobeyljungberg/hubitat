@@ -10,6 +10,7 @@
     {
       "id": "aa64c5aa-0cad-4b97-895b-ceba4a823c78",
       "name": "Evohome Device Sync Child",
+      "version": "1.0",
       "namespace": "tljungberg",
       "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Evohome%20device%20sync/Evohome-Device-Sync-Child.groovy",
       "required": true,
@@ -19,6 +20,7 @@
     {
       "id": "15f80833-4ec1-42d0-99a6-c95a1b141f21",
       "name": "Evohome Device Sync",
+      "version": "1.0",
       "namespace": "tljungberg",
       "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Evohome%20device%20sync/Evohome-Device-Sync-Parent.groovy",
       "required": true,
