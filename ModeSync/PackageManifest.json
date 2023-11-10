@@ -1,0 +1,18 @@
+{
+  "packageName": "Mode Sync",
+  "version": "1.0",
+  "category": "Utility",
+  "tags": "Tools & Utilities",
+  "author": "Tobey Ljungberg",
+  "apps": [
+    {
+      "id": "d9f64b34-7f67-425d-b05f-d583cc1733ac",
+      "name": "Heating Mode Sync",
+      "namespace": "tljungberg",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/ModeSync/HeatingModeSync.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false
+    }
+  ]
+}
