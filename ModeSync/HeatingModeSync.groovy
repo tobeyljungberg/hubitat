@@ -2,7 +2,7 @@ definition(
     name: "Heating Mode Sync",
     namespace: "tljungberg",
     author: "Tobey Ljungberg",
-    description: "Evohome Presence Sync",
+    description: "Allows you to change the EvoHome heating mode based on the hub mode.",
     category: "Convenience",
     iconUrl: "",
     iconX2Url: ""
