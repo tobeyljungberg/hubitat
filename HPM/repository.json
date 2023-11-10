@@ -11,6 +11,16 @@
         "Tools & Utilities"
       ],
       "id": "d9f64b34-7f67-425d-b05f-d583cc1733ac"
+    },
+    {
+      "name": "Evohome Device Sync",
+      "category": "Utility",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Evohome%20device%20sync/PackageManifest.json",
+      "description": "Syncs virtual devices with evohome zones.",
+      "tags": [
+        "Tools & Utilities"
+      ],
+      "id": "aa64c5aa-0cad-4b97-895b-ceba4a823c78"
     }
   ]
 }
