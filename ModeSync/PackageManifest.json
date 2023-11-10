@@ -1,6 +1,7 @@
 {
   "packageName": "Mode Sync",
   "version": "1.0",
+  "minimumHEVersion": "2.3",
   "category": "Utility",
   "tags": "Tools & Utilities",
   "author": "Tobey Ljungberg",
@@ -12,7 +13,8 @@
       "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/ModeSync/HeatingModeSync.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "description": "Allows you to change the EvoHome heating mode based on the hub mode."
     }
   ]
 }
