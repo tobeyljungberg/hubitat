@@ -43,18 +43,18 @@ def initialize() {
 def modeEventHandler(evt) {
     log.debug "Location mode was changed to: ${location.mode}"
     if (location.mode == "Away") {
-    if (syncdevice.currentValue("thermostatMode") == "off") {
-    log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
-    } else if (syncdevice.currentValue("thermostatMode") == "auto") or (syncdevice.currentValue("thermostatMode") == "custom"){
-        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to away."
-        syncdevice.setThermostatMode('away')
-    }
+        if (syncdevice.currentValue("thermostatMode") == "off") {
+            log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
+        } else if (syncdevice.currentValue("thermostatMode") == "auto" || syncdevice.currentValue("thermostatMode") == "custom"){
+            log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to away."
+            syncdevice.setThermostatMode('away')
+        }
     } else if (location.mode != "Away") {
-    if (syncdevice.currentValue("thermostatMode") == "off") {
-    log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
-    } else if (syncdevice.currentValue("thermostatMode") == "away") {
-        log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to auto."
-        syncdevice.setThermostatMode('auto')
+        if (syncdevice.currentValue("thermostatMode") == "off") {
+            log.debug "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}"
+        } else if (syncdevice.currentValue("thermostatMode") == "away") {
+            log.debug "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to auto."
+            syncdevice.setThermostatMode('auto')
+        }
     }
-}
 }
