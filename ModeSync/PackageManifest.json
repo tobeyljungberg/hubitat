@@ -1,6 +1,6 @@
 {
   "packageName": "Mode Sync",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "releaseNotes": "v1.0.1   Tiny bit of cleanup. No functional changes.",
   "minimumHEVersion": "2.3",
   "category": "Utility",
