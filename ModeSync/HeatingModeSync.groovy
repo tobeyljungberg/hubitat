@@ -14,6 +14,9 @@ preferences {
             paragraph "Select the Evo Home zone that will be triggered when away mode is set."
             input "syncdevice", "capability.temperatureMeasurement", title: "EvoHome Pilot Zone:", required: true
         }
+        section {
+            paragraph "For this automation to work you need to have the location mode set to Away when you are away. This can be done manually or by using another SmartApp."   
+        }
     }
 }
 
