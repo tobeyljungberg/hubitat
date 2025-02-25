@@ -1,0 +1,31 @@
+{
+    "packageName": "Evohome Connect",
+    "version": "2.0",
+    "releaseNotes": "v2.0: Cleaned up and refactored SmartApp and Device Handler code.",
+    "minimumHEVersion": "2.3",
+    "category": "HVAC",
+    "tags": "Thermostat, Heating, Evohome, HVAC",
+    "author": "Tobey Ljungberg",
+    "apps": [
+      {
+        "id": "f8a1d711-9b22-4c3a-8a72-7d9a7d2f3a0e",
+        "name": "Evohome Heating Zone",
+        "version": "2.0",
+        "namespace": "tljungberg",
+        "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Evohome%20Connect/Evohome-Heating-Zone.groovy",
+        "required": true,
+        "oauth": false,
+        "primary": false
+      },
+      {
+        "id": "b29a1f4d-41e5-4e15-8349-d7e83a456f31",
+        "name": "Evohome (Connect)",
+        "version": "2.0",
+        "namespace": "tljungberg",
+        "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Evohome%20Connect/Evohome-Connect.groovy",
+        "required": true,
+        "oauth": false,
+        "primary": false
+      }
+    ]
+  }
