@@ -17,6 +17,10 @@ preferences {
         section("Location Mode Configuration") {
             paragraph "For this automation to work you need to have the location mode set to Away when you are away. This can be done manually or by using another SmartApp."
         }
+        section("Mode Restore Option") {
+            paragraph "Decide what heating mode should be restored when returning from Away. If enabled, it will restore the previous mode; if disabled, it will default to 'auto'."
+            input "restoreModePreference", "bool", title: "Restore previous heating mode?", defaultValue: true, required: true
+        }
         section("Logging Options") {
             input "enableDebugLogging", "bool", title: "Enable Debug Logging?", defaultValue: false, required: true
         }
@@ -64,19 +68,25 @@ def initialize() {
 def modeEventHandler(evt) {
     logIt("debug", "Location mode was changed to: ${location.mode}")
     try {
+        def currentMode = syncdevice.currentValue("thermostatMode")
         if (location.mode == "Away") {
-            if (syncdevice.currentValue("thermostatMode") == "off") {
-                logIt("info", "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}")
-            } else if (syncdevice.currentValue("thermostatMode") in ["auto", "custom"]) {
-                logIt("info", "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to away.")
+            if (currentMode == "off" || currentMode == "away") {
+                logIt("info", "Skipping heating mode change as heating mode is ${currentMode}")
+            } else {
+                // Store the current mode before switching to away
+                state.previousHeatingMode = currentMode
+                logIt("info", "Heating mode was ${currentMode} and location mode changed to Away. Storing previous mode and setting heating to away.")
                 syncdevice.setThermostatMode('away')
             }
-        } else { // Any mode that is not "Away"
-            if (syncdevice.currentValue("thermostatMode") == "off") {
-                logIt("info", "Skipping heating mode change as heating mode is ${syncdevice.currentValue("thermostatMode")}")
-            } else if (syncdevice.currentValue("thermostatMode") == "away") {
-                logIt("info", "Heating mode is ${syncdevice.currentValue("thermostatMode")} and location mode changed to ${location.mode}, setting heating to auto.")
-                syncdevice.setThermostatMode('auto')
+        } else { // Not Away
+            if (currentMode == "off") {
+                logIt("info", "Skipping heating mode change as heating mode is ${currentMode}")
+            } else if (currentMode == "away") {
+                // Decide which mode to restore based on the config switch
+                def restoreMode = restoreModePreference ? (state.previousHeatingMode ?: 'auto') : 'auto'
+                logIt("info", "Heating mode was away and location mode changed to ${location.mode}. Setting heating to ${restoreMode}.")
+                syncdevice.setThermostatMode(restoreMode)
+                state.previousHeatingMode = null
             }
         }
     } catch (Exception e) {
