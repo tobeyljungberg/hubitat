@@ -1,0 +1,21 @@
+{
+  "packageName": "Mode Sync",
+  "version": "1.0.4",
+  "releaseNotes": "v1.0.1   Tiny bit of cleanup. No functional changes.\nv1.0.3   Added logic to check that mode Away exists.\nv1.0.4   Added enhanced logging with configurable debug logging, logging helper function, and improved error handling.",
+  "minimumHEVersion": "2.3",
+  "category": "Utility",
+  "tags": "Tools & Utilities",
+  "author": "Tobey Ljungberg",
+  "apps": [
+    {
+      "id": "d9f64b34-7f67-425d-b05f-d583cc1733ac",
+      "name": "Heating Mode Sync",
+      "namespace": "tljungberg",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/ModeSync/HeatingModeSync.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "description": "Allows you to change the EvoHome heating mode based on the hub mode."
+    }
+  ]
+}

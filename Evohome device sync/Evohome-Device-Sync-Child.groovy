@@ -3,7 +3,7 @@ definition(
     namespace: "tljungberg",
     author: "Tobey Ljungberg",
     description: "Child app for Evhome Device Sync",
-    category: "My Apps",
+    category: "Utility",
     parent: "tljungberg:Evohome Device Sync",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",

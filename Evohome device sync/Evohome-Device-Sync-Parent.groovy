@@ -4,7 +4,7 @@ definition(
     namespace:"tljungberg",
     author:"Tobey Ljungberg",
     description: "Parent app for Evohome Device Sync",
-    category: "Convenience",
+    category: "Utility",
     iconUrl: "",
     iconX2Url: "",
     iconX3Url: "",

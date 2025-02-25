@@ -1,0 +1,31 @@
+{
+  "packageName": "Smart bathroom fan",
+  "version": "1.2",
+  "releaseNotes": "v1.2: Updated logging to use proper info, warn, error, and debug levels; cleaned up log messages. Also retains the manual override and ambient humidity update improvements from v1.1.",
+  "minimumHEVersion": "2.3",
+  "category": "Utility",
+  "tags": "Tools & Utilities",
+  "author": "Tobey Ljungberg",
+  "apps": [
+    {
+      "id": "8b431248-3747-49ca-b416-f97de136b95f",
+      "name": "Smart Bathroom Fan",
+      "namespace": "tljungberg",
+      "version": "1.2",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/SmartBathroomFan/smart-bathroom-fan-child.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": false
+    },
+    {
+      "id": "50815b61-b1c9-479f-99ec-a4404ab9200c",
+      "name": "Smart Bathroom Fan Controllers",
+      "namespace": "tljungberg",
+      "version": "1.2",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/SmartBathroomFan/smart-bathroom-fan-parent.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": false
+    }
+  ]
+}
