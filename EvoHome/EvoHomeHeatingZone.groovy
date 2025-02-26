@@ -269,7 +269,7 @@ def installed() {
     state.boostTemperature = getInputDefaultValue('prefBoostTemperature')
     state.suppressTemperature = getInputDefaultValue('prefSuppressTemperature')
     
-    // Set log level from preferences
+    // Set log level from preferences - this is not imported from parent app so must be edited here for debug.
     state.logLevel = settings.prefLogLevel ?: "info"
 }
 
