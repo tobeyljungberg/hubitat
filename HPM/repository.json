@@ -31,6 +31,16 @@
         "Tools & Utilities"
       ],
       "id": "8b431248-3747-49ca-b416-f97de136b95f"
+    },
+    {
+      "name": "Simple Battery Monitor",
+      "category": "Utility",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Battery%20Monitor/PackageManifest.json",
+      "description": "Simple battery app.",
+      "tags": [
+        "Tools & Utilities"
+      ],
+      "id": "d1be6e90-2746-4dee-8e4e-8ce604c059be"
     }
   ]
 }
