@@ -51,8 +51,8 @@ metadata {
     }
 
     preferences {
-        input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
-        input name: "traceEnable", type: "bool", title: "Enable trace logging", defaultValue: true
+        input name: "prefLogLevel", type: "enum", title: "Log Level",
+            options: ["error", "warn", "info", "debug"], defaultValue: "info", required: true
         input name: "levelChangeRate", type: "number", title: "Level change rate (0..255): ", defaultValue: 48
     }
 }
@@ -63,19 +63,8 @@ private getMIN_COLOR_TEMP() { 2700 }
 private getMAX_COLOR_TEMP() { 6500 }
 
 def logDebug(msg) {
-    if(logEnable) log.debug msg
+    logMessage("debug", msg)
 }
-
-def logTrace(msg) {
-    if(traceEnable) log.trace msg
-}
-
-def logsOff() {
-    log.warn "debug logging disabled..."
-    device.updateSetting("logEnable", [value: "false", type: "bool"])
-    device.updateSetting("traceEnable", [value: "false", type: "bool"])
-}
-
 def parseHex4le(hex) {
     Integer.parseInt(hex.substring(2, 4) + hex.substring(0, 2), 16)
 }
@@ -86,7 +75,7 @@ def parseColorAttribute(id, value) {
     if(id == 0x03) {
         // currentColorX
         value = parseHex4le(value)
-        logTrace "Parsed ColorX: $value"
+        logDebug "Parsed ColorX: $value"
         value /= 65536
         parsed = true
         state.colorXReported = true;
@@ -96,7 +85,7 @@ def parseColorAttribute(id, value) {
     else if(id == 0x04) {
         // currentColorY
         value = parseHex4le(value)
-        logTrace "Parsed ColorY: $value"
+        logDebug "Parsed ColorY: $value"
         value /= 65536
         parsed = true
         state.colorYReported = true;
@@ -111,7 +100,7 @@ def parseColorAttribute(id, value) {
 }
 
 def parseAttributeList(cluster, list) {
-    logTrace "Cluster: $cluster, AttrList: $list"
+    logDebug "Cluster: $cluster, AttrList: $list"
     def parsed = true
 
     while(list.length()) {
@@ -127,13 +116,13 @@ def parseAttributeList(cluster, list) {
         def attrLen = DataType.getLength(attrType)
         def attrValue = list.substring(6 + 2*attrShift, 6 + 2*(attrShift+attrLen))
 
-        logTrace "Attr - Id: $attrId($attrLen), Type: $attrType, Value: $attrValue"
+        logDebug "Attr - Id: $attrId($attrLen), Type: $attrType, Value: $attrValue"
 
         if(cluster == 300) {
             parsed &= parseColorAttribute(attrId, attrValue)
         }
         else {
-            log.info "Not parsing cluster $cluster attribute: $list"
+            logMessage("info", "Not parsing cluster $cluster attribute: $list")
             parsed = false;
         }
 
@@ -158,7 +147,7 @@ def parse(String description) {
         def cluster = zigbee.parse(description)
 
         if(cluster) {
-            logTrace "Cluster - $cluster"
+            logDebug "Cluster - $cluster"
 
             if (cluster.clusterId == 0x0006 && cluster.command == 0x07) {
                 if (cluster.data[0] == 0x00) {
@@ -166,7 +155,7 @@ def parse(String description) {
                     parsed = true
                 }
                 else {
-                    log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+                    logMessage("warn", "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}")
                     parsed = true
                 }
             } else if(cluster.clusterId == 0x0300) {
@@ -176,7 +165,7 @@ def parse(String description) {
                     map = stringToMap(description)
                 }
 
-                logTrace "Map - $map"
+                logDebug "Map - $map"
                 def raw = map["read attr - raw"]
 
                 if(raw) {
@@ -189,9 +178,9 @@ def parse(String description) {
                         state.colorChanged = false;
                         state.colorXReported = false;
                         state.colorYReported = false;
-                        logTrace "Color Change: xy ($state.colorX, $state.colorY)"
+                        logDebug "Color Change: xy ($state.colorX, $state.colorY)"
                         def rgb = colorXy2Rgb(state.colorX, state.colorY)
-                        logTrace "Color Change: RGB ($rgb.red, $rgb.green, $rgb.blue)"
+                        logDebug "Color Change: RGB ($rgb.red, $rgb.green, $rgb.blue)"
                         events += updateColor(rgb)
                     }
                 }
@@ -203,7 +192,7 @@ def parse(String description) {
     }
 
     if(!parsed) {
-        log.info "DID NOT PARSE MESSAGE for description : $description"
+        logMessage("info", "DID NOT PARSE MESSAGE for description : $description")
     }
 
     for(ev in events) {
@@ -213,22 +202,22 @@ def parse(String description) {
 }
 
 def updateColor(rgb) {
-    logTrace "updateColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
+    logDebug "updateColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
     def events = []
 
     def hsv = colorRgb2Hsv(rgb.red, rgb.green, rgb.blue)
     hsv.hue = Math.round(hsv.hue * 100).intValue()
     hsv.saturation = Math.round(hsv.saturation * 100).intValue()
     hsv.level = Math.round(hsv.level * 100).intValue()
-    logTrace "updateColor: RGB ($hsv.hue, $hsv.saturation, $hsv.level)"
+    logDebug "updateColor: RGB ($hsv.hue, $hsv.saturation, $hsv.level)"
 
     rgb.red = Math.round(rgb.red * 255).intValue()
     rgb.green = Math.round(rgb.green * 255).intValue()
     rgb.blue = Math.round(rgb.blue * 255).intValue()
-    logTrace "updateColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
+    logDebug "updateColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
 
     def color = ColorUtils.rgbToHEX([rgb.red, rgb.green, rgb.blue])
-    logTrace "updateColor: $color"
+    logDebug "updateColor: $color"
 
     events += createEvent(name: "color", value: color, data: [ hue: hsv.hue, saturation: hsv.saturation, red: rgb.red, green: rgb.green, blue: rgb.blue, hex: color], displayed: false)
     events += createEvent(name: "hue", value: hsv.hue, displayed: false)
@@ -293,14 +282,14 @@ def setColor(value) {
     logDebug "setColor($value)"
     def rgb = colorHsv2Rgb(value.hue / 100, value.saturation / 100)
 
-    logTrace "setColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
+    logDebug "setColor: RGB ($rgb.red, $rgb.green, $rgb.blue)"
     def xy = colorRgb2Xy(rgb.red, rgb.green, rgb.blue);
-    logTrace "setColor: xy ($xy.x, $xy.y)"
+    logDebug "setColor: xy ($xy.x, $xy.y)"
 
     def intX = Math.round(xy.x*65536).intValue() // 0..65279
     def intY = Math.round(xy.y*65536).intValue() // 0..65279
 
-    logTrace "setColor: xy ($intX, $intY)"
+    logDebug "setColor: xy ($intX, $intY)"
 
     def strX = DataType.pack(intX, DataType.UINT16, true);
     def strY = DataType.pack(intY, DataType.UINT16, true);
@@ -370,9 +359,8 @@ def configure() {
 }
 
 def updated() {
-    log.debug "Device updated"
+    logMessage("debug", "Device updated")
     state.cmds = []
-    if(logEnable) runIn(30*60, logsOff)
 }
 
 def installed() {
@@ -488,13 +476,13 @@ def colorGammaRevert(component) {
 
 def colorXy2Rgb(x, y) {
 
-    logTrace "< Color xy: ($x, $y)"
+    logDebug "< Color xy: ($x, $y)"
 
     def Y = 1;
     def X = (Y / y) * x;
     def Z = (Y / y) * (1.0 - x - y);
 
-    logTrace "< Color XYZ: ($X, $Y, $Z)"
+    logDebug "< Color XYZ: ($X, $Y, $Z)"
 
     // sRGB, Reference White D65
     def M = [
@@ -512,14 +500,14 @@ def colorXy2Rgb(x, y) {
     g = colorGammaRevert(g / max)
     b = colorGammaRevert(b / max)
 
-    logTrace "< Color RGB: ($r, $g, $b)"
+    logDebug "< Color RGB: ($r, $g, $b)"
 
     [red: r, green: g, blue: b]
 }
 
 def colorRgb2Xy(r, g, b) {
 
-    logTrace "> Color RGB: ($r, $g, $b)"
+    logDebug "> Color RGB: ($r, $g, $b)"
 
     r = colorGammaAdjust(r)
     g = colorGammaAdjust(g)
@@ -540,18 +528,18 @@ def colorRgb2Xy(r, g, b) {
     def Y = r * M[1][0] + g * M[1][1] + b * M[1][2]
     def Z = r * M[2][0] + g * M[2][1] + b * M[2][2]
 
-    logTrace "> Color XYZ: ($X, $Y, $Z)"
+    logDebug "> Color XYZ: ($X, $Y, $Z)"
 
     def x = X / (X + Y + Z)
     def y = Y / (X + Y + Z)
 
-    logTrace "> Color xy: ($x, $y)"
+    logDebug "> Color xy: ($x, $y)"
 
     [x: x, y: y]
 }
 
 def colorHsv2Rgb(h, s) {
-    logTrace "< Color HSV: ($h, $s, 1)"
+    logDebug "< Color HSV: ($h, $s, 1)"
 
     def r
     def g
@@ -602,14 +590,14 @@ def colorHsv2Rgb(h, s) {
         }
     }
 
-    logTrace "< Color RGB: ($r, $g, $b)"
+    logDebug "< Color RGB: ($r, $g, $b)"
 
     [red: r, green: g, blue: b]
 }
 
 def colorRgb2Hsv(r, g, b)
 {
-    logTrace "> Color RGB: ($r, $g, $b)"
+    logDebug "> Color RGB: ($r, $g, $b)"
 
     def min = min(r, g, b)
     def max = max(r, g, b)
@@ -633,11 +621,32 @@ def colorRgb2Hsv(r, g, b)
         if(h < 0) h += 1
     }
 
-    logTrace "> Color HSV: ($h, $s, $v)"
+    logDebug "> Color HSV: ($h, $s, $v)"
 
     return [ hue: h, saturation: s, level: v ]
 }
 
 def iTo8bitHex(value) {
     return zigbee.convertToHexString(value.toInteger(), 2)
+}
+
+private logMessage(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
+    }
 }
