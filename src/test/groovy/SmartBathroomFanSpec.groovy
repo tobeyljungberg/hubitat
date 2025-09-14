@@ -8,6 +8,7 @@ class SmartBathroomFanSpec extends Specification {
         def cl = new GroovyClassLoader()
         script = cl.parseClass(new File('SmartBathroomFan/smart-bathroom-fan-child.groovy')).newInstance()
         script.log = new TestLogger()
+        script.settings = [prefLogLevel: 'debug']
         fanSwitch = new DummyFanSwitch()
         script.fanSwitch = fanSwitch
         script.state = [ambientHumidity: [40, 40, 40], fanOn: null, timestamp: 0]

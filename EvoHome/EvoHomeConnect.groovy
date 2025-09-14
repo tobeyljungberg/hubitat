@@ -66,7 +66,7 @@ preferences {
  */
 private void logMessage(String level, String msg) {
     def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
-    def configuredLevel = (atomicState.logLevel ?: settings.prefLogLevel ?: "info").toLowerCase()
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
     if (levels[level] <= levels[configuredLevel]) {
         switch(level) {
             case "error":
@@ -101,13 +101,10 @@ def uninstalled() {
 }
 
 void updated() {
-	logMessage("debug", "${app.label}: Updating with settings: ${settings}")
+        logMessage("debug", "${app.label}: Updating with settings: ${settings}")
 
-	// Set log level from preferences.
-	atomicState.logLevel = settings.prefLogLevel ?: "info"
-	
-	addInUseGlobalVar("EvohomeRequestPoll")
-	addInUseGlobalVar("EvohomeLastPolled")
+        addInUseGlobalVar("EvohomeRequestPoll")
+        addInUseGlobalVar("EvohomeLastPolled")
 	
 	// Evohome:
 	atomicState.evohomeEndpoint = 'https://mytotalconnectcomfort.com/WebApi'
@@ -267,9 +264,9 @@ void updateChildDeviceConfig() {
 					def dni = generateDni(loc.locationInfo.locationId, gateway.gatewayInfo.gatewayId, tcs.systemId, zone.zoneId )
 					activeDnis << dni
 					
-					def values = [
-						'debug': atomicState.logLevel,
-						'updateRefreshTime': atomicState.evohomeUpdateRefreshTime,
+                                        def values = [
+                                                'logLevel': settings.prefLogLevel ?: "info",
+                                                'updateRefreshTime': atomicState.evohomeUpdateRefreshTime,
 						'minHeatingSetpoint': formatTemperature(zone?.heatSetpointCapabilities?.minHeatSetpoint),
 						'maxHeatingSetpoint': formatTemperature(zone?.heatSetpointCapabilities?.maxHeatSetpoint),
 						'temperatureResolution': zone?.heatSetpointCapabilities?.valueResolution,
