@@ -53,28 +53,30 @@ def prefPage() {
         section("Enable?") {
             input "enabled", "bool", title: "Enable this SmartApp?"
         }
-        section("Debug") {
-            input "debugMode", "bool", title: "Enable debug logging?", required: true, defaultValue: false
+        section("Logging Options") {
+            input "prefLogLevel", "enum", title: "Log Level",
+                options: ["error", "warn", "info", "debug"], defaultValue: "info",
+                required: true, displayDuringSetup: true
         }
     }
 }
 
 def installed() {
-    log.info "Installed with settings: ${settings}"
+    logMessage("info", "Installed with settings: ${settings}")
     state.ambientHumidity = []
     state.fanOn = null
     initialize()
 
-    if (settings.debugMode) {
-        log.debug "Filling array with current humidity."
+    if ((settings.prefLogLevel ?: "info") == "debug") {
+        logMessage("debug", "Filling array with current humidity.")
         fillHumidityArrayWithCurrent()
     }
 }
 
 def updated() {
-    log.info "Updated with settings: ${settings}"
+    logMessage("info", "Updated with settings: ${settings}")
     if (!state.ambientHumidity) {
-        log.debug "Initializing array."
+        logMessage("debug", "Initializing array.")
         state.ambientHumidity = []
     }
     unsubscribe()
@@ -91,15 +93,15 @@ def initialize() {
 }
 
 def updateState() {
-    log.debug "State updated!"
+    logMessage("debug", "State updated!")
     state.timestamp = now()
 }
 
 def createSchedule() {
-    try { 
-        unschedule() 
-    } catch (e) { 
-        log.warn "Hamster fell off the wheel." 
+    try {
+        unschedule()
+    } catch (e) {
+        logMessage("warn", "Hamster fell off the wheel.")
     }
     updateState()
     runEvery5Minutes(updateAmbientHumidity)
@@ -111,15 +113,15 @@ def poke() {
 }
 
 def fanSwitchHandler(evt) {
-    log.debug "Fan event received: value=${evt.value}, physical=${evt.physical}, data=${evt.data}"
+    logMessage("debug", "Fan event received: value=${evt.value}, physical=${evt.physical}, data=${evt.data}")
     if (evt.value == "on") {
-        log.info "Fan turned on; enabling manual override."
+        logMessage("info", "Fan turned on; enabling manual override.")
         state.manualOverrideExpiration = manualOverrideTime ? now() + (manualOverrideTime * 60000) : null
         if (manualOverrideTime) {
             runIn(manualOverrideTime * 60, checkManualOverride)
         }
     } else if (evt.value == "off") {
-        log.info "Fan manually turned off; clearing manual override."
+        logMessage("info", "Fan manually turned off; clearing manual override.")
         state.manualOverrideExpiration = null
     }
 }
@@ -129,7 +131,7 @@ def eventHandler(evt) {
     Float rollingAverage = state.ambientHumidity.sum() / state.ambientHumidity.size()
 
     if (eventValue >= (rollingAverage + humidityHigh) && fanSwitch.currentSwitch == "off" && enabled) {
-        log.info "Humidity (${eventValue}) is more than ${humidityHigh}% above rolling average (${rollingAverage.round(1)}%). Turning the fan ON."
+        logMessage("info", "Humidity (${eventValue}) is more than ${humidityHigh}% above rolling average (${rollingAverage.round(1)}%). Turning the fan ON.")
         state.fanOn = now()
         fanSwitch.on()
         // If auto-activated, schedule an auto-off using fanDelay
@@ -140,24 +142,24 @@ def eventHandler(evt) {
         if (enabled) {
             // If a manual override is active, do not turn the fan off even if humidity is low
             if (state.manualOverrideExpiration && now() < state.manualOverrideExpiration) {
-                log.info "Humidity is low but manual override is active; not turning fan off."
+                logMessage("info", "Humidity is low but manual override is active; not turning fan off.")
             } else {
-                log.info "Humidity (${eventValue}) is at most ${humidityLow}% above rolling average (${rollingAverage}). Turning the fan OFF."
+                logMessage("info", "Humidity (${eventValue}) is at most ${humidityLow}% above rolling average (${rollingAverage}). Turning the fan OFF.")
                 fanOff()
             }
         } else {
-            log.warn "Humidity (${eventValue}) is at most ${humidityLow}% above rolling average (${rollingAverage}). APP is DISABLED, so not turning the fan OFF."
+            logMessage("warn", "Humidity (${eventValue}) is at most ${humidityLow}% above rolling average (${rollingAverage}). APP is DISABLED, so not turning the fan OFF.")
         }
     } else if (state.fanOn != null && fanDelay && state.fanOn + fanDelay * 60000 <= now()){
-        log.info "Fan timer elapsed. Turning the fan OFF. Current humidity is ${eventValue}%."
+        logMessage("info", "Fan timer elapsed. Turning the fan OFF. Current humidity is ${eventValue}%.")
         fanOff()
     } else if (state.fanOn != null && fanSwitch.currentSwitch == "off") {
-        log.info "Fan turned OFF by someone/something else. Resetting."
+        logMessage("info", "Fan turned OFF by someone/something else. Resetting.")
         state.fanOn = null
     }
 
     if (now() - state.timestamp > 360000) {
-        log.warn "Scheduler hamster died. Spawning a new one."
+        logMessage("warn", "Scheduler hamster died. Spawning a new one.")
         poke()
     }
 }
@@ -174,7 +176,7 @@ def updateAmbientHumidity() {
 
     // Pause updates if the fan is on (regardless of how it was activated)
     if (fanSwitch.currentSwitch == "on") {
-        log.debug "Fan is on, pausing humidity updates."
+        logMessage("debug", "Fan is on, pausing humidity updates.")
         return
     }
 
@@ -188,24 +190,24 @@ def updateAmbientHumidity() {
 
     Float rollingAverage = state.ambientHumidity.sum() / state.ambientHumidity.size()
     Float triggerPoint = rollingAverage + humidityHigh
-    log.info "Rolling average: ${rollingAverage.round(1)}% - Currently ${sensor.currentHumidity}% - Trigger at ${triggerPoint.round(1)}%."
+    logMessage("info", "Rolling average: ${rollingAverage.round(1)}% - Currently ${sensor.currentHumidity}% - Trigger at ${triggerPoint.round(1)}%.")
 }
 
 def checkManualOverride() {
-    log.info "Manual override period expired."
+    logMessage("info", "Manual override period expired.")
     state.manualOverrideExpiration = null
     def currentHumidity = Double.parseDouble(sensor.currentHumidity.toString().replace('%', ''))
     Float rollingAverage = state.ambientHumidity.sum() / state.ambientHumidity.size()
     if (currentHumidity <= (rollingAverage + humidityLow) && fanSwitch.currentSwitch == "on") {
-         log.info "After manual override expired, humidity is low; turning fan off."
+         logMessage("info", "After manual override expired, humidity is low; turning fan off.")
          fanOff()
     } else {
-         log.info "After manual override expired, humidity is still high; fan remains on."
+         logMessage("info", "After manual override expired, humidity is still high; fan remains on.")
     }
 }
 
 def fanOff() {
-    log.info "Turning fan OFF due to timer."
+    logMessage("info", "Turning fan OFF due to timer.")
     state.fanOn = null
     fanSwitch.off()
 }
@@ -214,4 +216,25 @@ def setVersion(){
     state.version = "1.0"
     state.internalName = "SmartBathroomFan"
     state.externalName = "Smart Bathroom Fan"
+}
+
+private logMessage(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
+    }
 }

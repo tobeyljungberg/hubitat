@@ -254,7 +254,6 @@ def installed() {
     state.installedAt = now()
     
     // These default values will be overwritten by the Evohome SmartApp almost immediately:
-    state.debug = false
     state.updateRefreshTime = 5 // Wait this many seconds after an update before polling.
     state.zoneType = 'RadiatorZone'
     state.minHeatingSetpoint = formatTemperature(5.0)
@@ -304,7 +303,7 @@ void generateEvent(values) {
                 || name == 'systemId'
                 || name == 'zoneId'
                 || name == 'schedule'
-                || name == 'debug'
+                || name == 'logLevel'
                 || name == 'updateRefreshTime'
                 ) {
                 state."${name}" = value

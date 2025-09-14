@@ -8,6 +8,7 @@ class SmartBathroomFanSpec extends Specification {
         def cl = new GroovyClassLoader()
         script = cl.parseClass(new File('SmartBathroomFan/smart-bathroom-fan-child.groovy')).newInstance()
         script.log = new TestLogger()
+        script.settings = [prefLogLevel: 'debug']
         fanSwitch = new DummyFanSwitch()
         script.fanSwitch = fanSwitch
         script.state = [ambientHumidity: [40, 40, 40], fanOn: null, timestamp: 0]
@@ -29,7 +30,6 @@ class SmartBathroomFanSpec extends Specification {
 
     static class TestLogger {
         List entries = []
-        def trace(msg) { entries << [level: 'trace', msg: msg] }
         def debug(msg) { entries << [level: 'debug', msg: msg] }
         def info(msg)  { entries << [level: 'info', msg: msg] }
         def warn(msg)  { entries << [level: 'warn', msg: msg] }
