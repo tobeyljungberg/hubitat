@@ -1,3 +1,10 @@
-/.DS_Store
+# macOS
 .DS_Store
-.DS_Store
+
+# Gradle directories
+/.gradle/
+build/
+
+# Binary files
+*.class
+*.jar
