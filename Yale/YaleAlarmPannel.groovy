@@ -27,7 +27,9 @@ metadata {
     }
     
     preferences {
-        input "logEnable", "bool", defaultValue: false, title: "Enable Debug Logging", description: "Enable extra logging"
+        input "prefLogLevel", "enum", title: "Log Level",
+            options: ["error", "warn", "info", "debug"], defaultValue: "info",
+            required: true
     }
     
     tiles {
@@ -58,7 +60,7 @@ metadata {
 }
 
 def updated() {
-    log.debug "updated"
+    logMessage("debug", "updated")
     def supportedModes = []
     supportedModes << "active" 
     supportedModes << "armedAway" 
@@ -67,31 +69,31 @@ def updated() {
     supportedModes << "disabled"
     
     state.supportedModes = supportedModes
-    log.info "Supportedmodes - $supportedModes"
+    logMessage("info", "Supportedmodes - $supportedModes")
     return sendEvent(name: "supportedModes", value: supportedModes, displayed: false)
     unschedule()
 }
 def installed() {
-    log.info "installed"
+    logMessage("info", "installed")
 }
 
 def poll() {
-    log.info "poll"
+    logMessage("info", "poll")
     refresh()
 }
 
 def refresh() {
-    log.info "Refresh"
+    logMessage("info", "Refresh")
     try {
     parent.getDeviceData()
     }
     catch (e){
-    log.warn "refresh error $e"
+    logMessage("warn", "refresh error $e")
     }
     
 }
 def datain(data) {
-    if (logEnable) log.debug "Datain $data"
+    logMessage("debug", "Datain $data")
     //log.debug "Datain ${data?.message} ,  ${data?.data}" //${data?.data[0].mode},
         def dmsg = data?.message
         def resp = data?.data[0]?.mode
@@ -118,19 +120,19 @@ def datain(data) {
         }
         else { //if (YaleAlarmState.mode.contains("system.permission_denied")) {
             state.errorCount = state.errorCount +1
-            log.warn "system off line / Error, response= '${data?.data[0]}' or Resp $resp"
+            logMessage("warn", "system off line / Error, response= '${data?.data[0]}' or Resp $resp")
             state.modes = "disabled" //"${data?.mode} - ${data?.message}"
             state.alarm = "disabled"
             if (state.errorCount < 5){ runIn(30,refresh)}
         }
         if (dmsg != "OK!"){
             state.errorCount = state.errorCount +1
-            log.warn "$dmsg"
+            logMessage("warn", "$dmsg")
             state.modes = "disabled"
             state.alarm = "disabled"
             if (state.errorCount < 5){runIn(20,refresh)}
         }
-        log.info "Data pushed in, state is ${state.modes}, error are '${state.errorCount}'" //${data?.message}
+        logMessage("info", "Data pushed in, state is ${state.modes}, error are '${state.errorCount}'") //${data?.message}
         sendEvent(name: "modes", value: state.modes, displayed: true, descriptionText: "Refresh - response '$dmsg'") //isStateChange: false,
         sendEvent(name: "lock", value: state.lock, displayed: false) //isStateChange: false,
         sendEvent(name: "switch", value: state.switch, displayed: false) //isStateChange: false,
@@ -177,21 +179,21 @@ def disarm(mode) {
     postcmd(mode)
 }
 def modes (mode) {
-    if (logEnable) log.debug "direct modes command $mode"
-    if (mode == "active") { log.warn "not handled $mode"}
+    logMessage("debug", "direct modes command $mode")
+    if (mode == "active") { logMessage("warn", "not handled $mode") }
     if (mode == "armedAway") {armAway()}
     if (mode == "armedStay") {armStay()}
     if (mode == "disarm") {disarm()}
 }
 def setAlertState(Astate){
-    if (logEnable) log.debug " Aleart state is $Astate"
+    logMessage("debug", " Aleart state is $Astate")
 }
 // ===================   Modes end    ==  in to post CMDs ====================
 def postcmd(mode){
     def eventlist = []
-    log.trace "postcmd outgoing Mode CMD $mode "
+    logMessage("debug", "postcmd outgoing Mode CMD $mode ")
     def data = parent.ArmDisRef(mode)
-    if (logEnable) log.debug "POSTCMD $data"
+    logMessage("debug", "POSTCMD $data")
     def dmsg = ''
     if (data != "error"){
         dmsg = data?.message
@@ -227,7 +229,7 @@ def postcmd(mode){
         state.lock = "error"
         state.switch = "error"
     }
-    log.info "Mode Change state is ${state.modes}, $dmsg, errors are ${state.errorCount}"
+    logMessage("info", "Mode Change state is ${state.modes}, $dmsg, errors are ${state.errorCount}")
     eventlist << sendEvent(name: "modes", value: state.modes, displayed: true, descriptionText: "Mode Change to ${state.modes} - $dmsg") //isStateChange: false,
     eventlist << sendEvent(name: "lock", value: state.lock, displayed: false) //isStateChange: false,
     eventlist << sendEvent(name: "switch", value: state.switch, displayed: false) //isStateChange: false,
@@ -237,5 +239,26 @@ def postcmd(mode){
 
 // parse events into attributes
 def parse(String description) {
-    log.warn "Parsing '${description}'"
+    logMessage("warn", "Parsing '${description}'")
+}
+
+private logMessage(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
+    }
 }
