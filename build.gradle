@@ -1,0 +1,23 @@
+plugins {
+    id 'groovy'
+}
+
+java {
+    // Use a Java 17 toolchain so Groovy/ASM can parse JDK classes
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
+}
+
+test {
+    // Required for running Spock 2.x tests
+    useJUnitPlatform()
+}
