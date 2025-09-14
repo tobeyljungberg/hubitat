@@ -34,12 +34,9 @@ class EvoHomeConnectSpec extends Specification {
     }
 
     @Unroll
-    def "logMessage with settings '#settingsLevel' and atomicState '#atomicLevel' logs '#msgLevel'? #shouldLog"() {
+    def "logMessage with settings '#settingsLevel' logs '#msgLevel'? #shouldLog"() {
         given:
         script.settings.prefLogLevel = settingsLevel
-        if (atomicLevel != null) {
-            script.atomicState.logLevel = atomicLevel
-        }
 
         when:
         script.logMessage(msgLevel, 'test')
@@ -48,11 +45,11 @@ class EvoHomeConnectSpec extends Specification {
         (script.log.entries*.level.contains(msgLevel)) == shouldLog
 
         where:
-        settingsLevel | atomicLevel | msgLevel | shouldLog
-        'info'        | null        | 'debug'  | false
-        'debug'       | null        | 'debug'  | true
-        'info'        | 'debug'     | 'debug'  | true
-        'debug'       | 'warn'      | 'info'   | false
+        settingsLevel | msgLevel | shouldLog
+        'info'        | 'debug'  | false
+        'debug'       | 'debug'  | true
+        'warn'        | 'info'   | false
+        'info'        | 'info'   | true
     }
 
     @Unroll

@@ -30,33 +30,38 @@ def prefPage() {
             input "evohomezone", "capability.temperatureMeasurement", title: "Evohome Zone:", required: true
             input "vdevicetarget", "capability.temperatureMeasurement", title: "Virtual Device Target:", required: true
         }
+        section("Logging Options") {
+            input "prefLogLevel", "enum", title: "Log Level",
+                options: ["error", "warn", "info", "debug"], defaultValue: "info",
+                required: true, displayDuringSetup: true
+        }
     }
 }
 
 def installed() {
-    log.debug "Device installed with settings: ${settings}"
+    logMessage("debug", "Device installed with settings: ${settings}")
     initialize()
 }
 
 def updated() {
-    log.debug "Device settings updated"
+    logMessage("debug", "Device settings updated")
     initialize()
 }
 def initialize() {
-    log.debug "Clearing old subscriptons."
+    logMessage("debug", "Clearing old subscriptons.")
     unsubscribe()
     if (istempsense == false) {
-        log.debug "Target device is thermostat."
+        logMessage("debug", "Target device is thermostat.")
     } else if (istempsense == true) {
-        log.debug "Target device is temperature sensor."
+        logMessage("debug", "Target device is temperature sensor.")
     }
-    log.debug "Setting allowed states on virtual device."
+    logMessage("debug", "Setting allowed states on virtual device.")
     if (istempsense == false) {
     vdevicetarget.setSupportedThermostatModes('["heat","off"]')
     } else if (istempsense == true) {
-        log.debug "Skipping state setting as target is not thermostat."
+        logMessage("debug", "Skipping state setting as target is not thermostat.")
     }
-    log.debug "Populating virtual device starting values."
+    logMessage("debug", "Populating virtual device starting values.")
     def temp = evohomezone.currentValue("temperature")
     def heatset = evohomezone.currentValue("heatingSetpoint")
     def thermmode = evohomezone.currentValue("thermostatMode")
@@ -75,7 +80,7 @@ def initialize() {
     } else if (istempsense == true) {
         vdevicetarget.setTemperature(temp)
     }
-    log.debug "Creating event subscriptions."
+    logMessage("debug", "Creating event subscriptions.")
     if (istempsense == false) {
     subscribe(evohomezone, "temperature", evohomeHandler)
     subscribe(evohomezone, "heatingSetpoint", evohomeHandler)
@@ -89,7 +94,7 @@ def initialize() {
 }
 
 def evohomeHandler(evt) {
-    log.debug "evohomeHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+    logMessage("debug", "evohomeHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}")
     if (evt.name == "temperature") {
     vdevicetarget.setTemperature(evt.value)
     } else if (evt.name == "heatingSetpoint") {
@@ -108,7 +113,7 @@ def evohomeHandler(evt) {
 }
 
 def thermostatHandler(evt) {
-    log.debug "thermostatHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+    logMessage("debug", "thermostatHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}")
     if (evt.name == "heatingSetpoint") {
             evohomezone.setHeatingSetpoint(evt.value)
         
@@ -124,7 +129,27 @@ def thermostatHandler(evt) {
 }
 
 def evohomeTempHandler(evt) {
-    log.debug "evohomeTempHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}"
+    logMessage("debug", "evohomeTempHandler called with with event: name:${evt.name} source:${evt.source} value:${evt.value} isStateChange: ${evt.getIsStateChange()} isPhysical: ${evt.isPhysical()} isDigital: ${evt.isDigital()} data: ${evt.data} device: ${evt.device}")
     vdevicetarget.setTemperature(evt.value)
-    
+}
+
+private logMessage(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
+    }
 }

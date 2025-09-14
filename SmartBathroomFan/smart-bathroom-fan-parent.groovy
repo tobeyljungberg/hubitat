@@ -16,13 +16,13 @@ preferences {
 }
 
 def installed() {
-    log.debug "Installed using settings: ${settings}"
+    logMessage("debug", "Installed using settings: ${settings}")
     initialize()
 }
 
 def initialize() {
     setVersion()
-    log.info "Smart Bathroom Fan Parent Initialized"
+    logMessage("info", "Smart Bathroom Fan Parent Initialized")
 }
 
 
@@ -32,6 +32,12 @@ def mainPage() {
 
         if (state.appInstalled == 'COMPLETE') {
             display()
+
+            section("Logging Options") {
+                input "prefLogLevel", "enum", title: "Log Level",
+                    options: ["error", "warn", "info", "debug"], defaultValue: "info",
+                    required: true, displayDuringSetup: true
+            }
 
             section ("") {
                 app(name: "smartBathroomFanApp", appName: "Smart Bathroom Fan", namespace: "tljungberg", title: "Add a new Smart Bathroom Fan", multiple: true)
@@ -52,13 +58,34 @@ def installCheck() {
     if(state.appInstalled != 'COMPLETE'){
         section{paragraph "Please hit 'Done' to install '${app.label}' parent app "}
     } else {
-        log.info "Parent Installed OK"
+        logMessage("info", "Parent Installed OK")
     }
 }
 
 
 def setVersion() {
-		state.version = "1.0"
+                state.version = "1.0"
     state.internalName = "SmartBathroomFanControllers"
     state.externalName = "Smart Bathroom Fan Controllers"
+}
+
+private logMessage(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
+    }
 }
