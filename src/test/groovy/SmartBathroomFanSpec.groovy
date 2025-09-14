@@ -29,7 +29,6 @@ class SmartBathroomFanSpec extends Specification {
 
     static class TestLogger {
         List entries = []
-        def trace(msg) { entries << [level: 'trace', msg: msg] }
         def debug(msg) { entries << [level: 'debug', msg: msg] }
         def info(msg)  { entries << [level: 'info', msg: msg] }
         def warn(msg)  { entries << [level: 'warn', msg: msg] }
