@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import common.LoggingUtils
+
 definition(
     name: "YaleApp",
     namespace: "Mark-C-uk",
@@ -22,7 +24,7 @@ definition(
     iconUrl: "",
     iconX2Url: "",
     iconX3Url: "",
-	singleInstance: true
+        singleInstance: true
 )
 //App code should have all icon urls set to empty string
 
@@ -81,7 +83,8 @@ def cloudLogin() {
 			)
             input("push", "bool", defaultValue: true, title: "Send push messages", required: true, displayDuringSetup: true )
             input("sendPushMessageto", "capability.notification", title: "Send a Push notification to?", multiple: true, required: false)
-            input "logEnable", "bool", defaultValue: false, title: "Enable Debug Logging", description: "Enable extra logging"
+            input name: "logEnable", type: "bool", defaultValue: false, title: "Enable debug logging", description: "Enable extra logging"
+            input name: "traceEnable", type: "bool", defaultValue: false, title: "Enable trace logging"
 		}
 	}
 }
@@ -105,14 +108,14 @@ def selectDevices() {
 		errorMsg = "There were no devices from YALE"
 	}
 	def newDevices = [:]
-    if (logEnable) log.debug "select devices, ${devices}"
+     logDebug "select devices, ${devices}"
 	devices.each {
-    	//log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
+    	//logDebug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
 		def isChild = getChildDevice(it.value.deviceId) // deviceId changed to dni so dont add twice
 		if (!isChild) {
-        	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
+        	//logDebug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
 			newDevices["${it.value.deviceId}"] = "${it.value.alias} \n model ${it.value.deviceModel}"
-            //log.debug "select devices, each !ischild $newDevices"
+            //logDebug "select devices, each !ischild $newDevices"
 		}
 	}
 	if (newDevices == [:]) {
@@ -142,7 +145,7 @@ def selectDevices() {
 def getDevices() {
 	def currentDevices = ''
 	currentDevices = getDeviceData()
-    if (logEnable) log.debug "get devices - ${currentDevices}"
+     logDebug "get devices - ${currentDevices}"
 	state.devices = [:]
 	def devices = state.devices
 	currentDevices.each { //.data?.data
@@ -151,7 +154,7 @@ def getDevices() {
 		device["deviceModel"] = it.type
 		device["deviceId"] = it.device_id
         devices << ["${it.device_id}": device]	
-		log.info "GET Device ${it.name} - ${it.device_id}"
+		logInfo "GET Device ${it.name} - ${it.device_id}"
 	}
     def deviceP = [:] //make up device for pannel and add to array
 	deviceP["alias"] = "Yale Alarm"
@@ -159,11 +162,11 @@ def getDevices() {
 	deviceP["deviceId"] = "RF:YalePan1"  
 	devices << ["RF:YalePan1": deviceP]
     
-    if (logEnable) log.debug "arry $devices"
+     logDebug "arry $devices"
 }
 
 def addDevices() {
-	//log.debug "ADD Devices "// ${state?.devices}
+	//logDebug "ADD Devices "// ${state?.devices}
 	def Model = [:]
 	Model << ["YaleAlarmPannel" : "Yale Alarm pannel"]			
 	Model << ["device_type.keypad" : "Yale Alarm Open Close Sensor"]
@@ -174,12 +177,12 @@ def addDevices() {
 	def hub = location.hubs[0]
 	def hubId = hub.id
 	selectedDevices.each { deviceId -> 
-    	log.debug "Add Devices each -${device?.value?.alias} - $deviceId"
+    	logDebug "Add Devices each -${device?.value?.alias} - $deviceId"
 		def isChild = getChildDevice(deviceId)
 		if (!isChild) {
 			def device = state.devices.find { it.value.deviceId == deviceId }
 			def deviceModel = device.value.deviceModel 
-            log.debug "Add Devices, not child $device - $deviceModel"
+            logDebug "Add Devices, not child $device - $deviceModel"
 			addChildDevice(
 				"smartthings",
 				Model["${deviceModel}"], 
@@ -192,7 +195,7 @@ def addDevices() {
 					]
 				]
 			)
-			log.info "Installed  $deviceModel with alias ${device.value.alias}"
+			logInfo "Installed  $deviceModel with alias ${device.value.alias}"
 		}
 	}
 }
@@ -204,7 +207,7 @@ def yaleAuthToken () {
 
 def getToken() {
 	//def toke = createAccessToken()
-	//log.debug "Attempting to login for new token tringin this $toke"
+	//logDebug "Attempting to login for new token tringin this $toke"
     def eventlist = []
 	def paramsLogin = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/o/token/",
@@ -217,11 +220,11 @@ def getToken() {
 	]
     try{
 	httpPost(paramsLogin) { responseLogin ->
-		if (logEnable) log.debug "Login response is $responseLogin.data"
+		 logDebug "Login response is $responseLogin.data"
 		def respstatus = responseLogin?.status
         if (respstatus == 200){
         	state.Token = responseLogin?.data?.access_token
-    		log.info "$respstatus - Token updated to ${state.Token}"
+    		logInfo "$respstatus - Token updated to ${state.Token}"
     		eventlist << sendEvent(name: "TokenUpdate", value: "tokenUpdate Successful.")
             if (state.currentError != "none") {
 				state.currentError = "none"
@@ -229,24 +232,24 @@ def getToken() {
     	}
     	else {
 			state.currentError = "token error $respstatus, ${responseLogin?.data}" //responseLogin.message
-			log.error "Error in getToken: ${state.currentError}, ${responseLogin?.data}"
+			logError "Error in getToken: ${state.currentError}, ${responseLogin?.data}"
 			eventlist << sendEvent(name: "TokenUpdate", value: state.currentError)
             errorhand("Error Token NOT 200")
 		}
 	}
     }
     catch (e){
-    	log.error "Error token: ${e}, ${e?.message}"
+    	logError "Error token: ${e}, ${e?.message}"
         state.currentError = e?.message
         eventlist << sendEvent(name: "TokenUpdate", value: state.currentError)
         errorhand("Error Token catch")
     }
-	if (logEnable) log.debug "token end ${state.currentError}"
+	 logDebug "token end ${state.currentError}"
     return eventlist
 }
 //	----- GET DEVICE DATA FROM THE CLOUD -----
 def getDeviceData() { // get details for adding
-	//log.debug "getDeviceData"
+	//logDebug "getDeviceData"
     def eventlist = []
 	def currentDevices = ''
     def getDeviceStatus = [
@@ -257,7 +260,7 @@ def getDeviceData() { // get details for adding
     httpGet(getDeviceStatus) { response ->
     	def respstatus = response?.status
         def respdata = response?.data
-		//log.debug "get device data devices ${response.status} , ${response?.data}"
+		//logDebug "get device data devices ${response.status} , ${response?.data}"
         if (respstatus == 200){
         	if (state.errorCount != 0) {state.errorCount = 0}
         	if (state.currentError != "none") { 
@@ -266,13 +269,13 @@ def getDeviceData() { // get details for adding
         	currentDevices = response?.data?.data
 	        
             currentDevices.each {
-        		//log.debug "it ${it?.name} - ${it?.device_id}"
+        		//logDebug "it ${it?.name} - ${it?.device_id}"
 				def isChild = getChildDevice(it?.device_id)
 
             	if (isChild) {
-                	//log.info "Sending status of '${it?.status_open[0]}' to child '${it?.name}'" 
+                	//logInfo "Sending status of '${it?.status_open[0]}' to child '${it?.name}'" 
                 	isChild.datain(it) //reenabled
-                    //log.debug "${it?.status_open[0]}"
+                    //logDebug "${it?.status_open[0]}"
                     
 /*                    def OpCl = ""
                     if (it?.status_open[0] == "device_status.dc_close") { OpCl = "closed" }
@@ -285,7 +288,7 @@ def getDeviceData() { // get details for adding
         }
 		else {
 			state.currentError = "error get devices $respstatus - $respdata"
-			log.error "Get device data NOT 200 - ${state.currentError}"
+			logError "Get device data NOT 200 - ${state.currentError}"
             errorhand("Get device data NOT 200")
             eventlist << sendEvent(name: "getdevicedata devices", value: "yale error")
 		}
@@ -293,7 +296,7 @@ def getDeviceData() { // get details for adding
     }
     
     catch (ed){
-    	log.error "Error device data: ${ed}, ${ed?.message}"
+    	logError "Error device data: ${ed}, ${ed?.message}"
         state.currentError = ed?.message
         errorhand("Get device data catch")
         eventlist << sendEvent(name: "getdevicedata devices ", value: "catch error")
@@ -306,16 +309,16 @@ def getDeviceData() { // get details for adding
     httpGet(getPanelStatus) { response ->
     	def respstatus = response?.status
         def respdata = response?.data
-//log.debug "get device data - pannel ${response.status} ---- ${respdata} -------- ${response}"
+//logDebug "get device data - pannel ${response.status} ---- ${respdata} -------- ${response}"
         if (respstatus == 200){
         	def respmsg = response?.data?.message
         	if (state.currentError != "none") {
 				state.currentError = "none"
 			}
-        	//log.debug "Pannel request good - ${response.data.data.getAt(0)} , ${response.data.message}" //${response.data}
+        	//logDebug "Pannel request good - ${response.data.data.getAt(0)} , ${response.data.message}" //${response.data}
         	def isChild = getChildDevice('RF:YalePan1')
             	if (isChild) {
-                	//log.info "Sending status of '${response.data.data}', '$respmsg' to AlarmPannel" 
+                	//logInfo "Sending status of '${response.data.data}', '$respmsg' to AlarmPannel" 
                 	isChild.datain(respdata)
                 	if (respmsg != 'OK!'){
                     	send("Alarm updated with message $respmsg")   
@@ -325,7 +328,7 @@ def getDeviceData() { // get details for adding
         }
         else {
 			state.currentError = "error get pannel $respstatus - $respdata"
-			log.error "Get pannel data NOT 200 - ${state.currentError}"
+			logError "Get pannel data NOT 200 - ${state.currentError}"
             errorhand("Get pannel data NOT 200")
             eventlist << sendEvent(name: "getdevicedata pannel", value: "yale error")
 		}
@@ -333,23 +336,23 @@ def getDeviceData() { // get details for adding
     }
     catch (ep){
 		state.currentError = ep?.message
-    	log.error "Get pannel data catch ${state.currentError}"
+    	logError "Get pannel data catch ${state.currentError}"
         errorhand("Get pannel data catch")
         eventlist << sendEvent(name: "getdevicedata pannel", value: "catch error")
     }
-    log.info "get device data current devices" // ${currentDevices.name}"
+    logInfo "get device data current devices" // ${currentDevices.name}"
     return currentDevices
 }
 
 private send(msg) {
     if ( push == true ) {
-        log.trace "sending push message - $msg" 
+        logTrace "sending push message - $msg" 
         sendPushMessageto.deviceNotification("$msg")
     }
 }
 //	----- ARM DISARM REFRESH -----
 def ArmDisRef(mode){
-	log.trace "Incoming Mode CMD ${mode.value} "
+	logTrace "Incoming Mode CMD ${mode.value} "
     def respdata = ""
 	def paramsMode = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
@@ -370,7 +373,7 @@ def ArmDisRef(mode){
             if (state.currentError != "none") {
 				state.currentError = "none"
             }
-            log.info "Mode $mode - '$respstatus' - '$respmsg'" // $respdata" 
+            logInfo "Mode $mode - '$respstatus' - '$respmsg'" // $respdata" 
             
             
             if (respmsg != 'OK!'){
@@ -378,7 +381,7 @@ def ArmDisRef(mode){
             }   
 		}
 		else { //response status not 200
-        	log.error "Error in MODE '$respstatus' to $mode, ${state.currentError} - $respdata"
+        	logError "Error in MODE '$respstatus' to $mode, ${state.currentError} - $respdata"
 			state.currentError = "error mode pannel $respstatus - $respdata"
 			respdata = 'error'
             errorhand("Error Arm/Dis/Ref NOT 200")
@@ -386,7 +389,7 @@ def ArmDisRef(mode){
 	}
     }
     catch (e){
-    	log.error "Error arm/dis/Ref: ${e}, ${e?.message}"
+    	logError "Error arm/dis/Ref: ${e}, ${e?.message}"
         state.currentError = e?.message
         errorhand("Error Arm/Dis/Ref Catch")
         respdata = 'error'
@@ -396,25 +399,27 @@ def ArmDisRef(mode){
 }
 
 def errorhand (msg){
-	log.warn "Error Handler $msg"
+	logWarn "Error Handler $msg"
     sendEvent(name: "currentError", value: "Yale - $msg ${state.currentError}")
     send("Yale - $msg - ${state.currentError}")
 
 }
 //	----- INSTALL, UPDATE, INITIALIZE -----
 def installed() {
-	initialize()
+        initialize()
+        if (logEnable || traceEnable) runIn(1800, logsOff)
 }
 
 def updated() {
-	unsubscribe()
-	initialize()
+        unsubscribe()
+        initialize()
+        if (logEnable || traceEnable) runIn(1800, logsOff)
 }
 
 def initialize() {
-	log.info "initialise"
-	unsubscribe()
-	unschedule()
+        logInfo "initialise"
+        unsubscribe()
+        unschedule()
 	runEvery5Minutes(checkError)
     runEvery3Hours(getDeviceData)
     //runEvery10Minutes(getDeviceData)
@@ -428,7 +433,7 @@ def initialize() {
     schedule("${randomSixty} ${randomSixty} ${randomTwentyFour} ? * 2/2 *", getToken)
     
     //schedule("15 1 0 ? * 2/2 *", getToken) // every 2 days
-    log.debug "toke = $toktime , ransixity ${randomSixty}, ran24 ${randomTwentyFour}"
+    logDebug "toke = $toktime , ransixity ${randomSixty}, ran24 ${randomTwentyFour}"
 	//if (selectedDevices) {
 	if (selectedDevices) {
 		addDevices()
@@ -437,33 +442,33 @@ def initialize() {
 //	----- PERIODIC CLOUD MX TASKS -----
 def checkError() {
 	if (state.currentError == null || state.currentError == "none") {
-		log.info "YaleApp - Connect did not have any issues - ${state?.currentError}"
+		logInfo "YaleApp - Connect did not have any issues - ${state?.currentError}"
 		return
 	}
 	def errMsg = state.currentError
-	log.info "Attempting to solve error: ${errMsg}"
+	logInfo "Attempting to solve error: ${errMsg}"
 	state.errorCount = state.errorCount +1
     send("error ${errMsg}, count is ${state.errorCount}")
 	if (state.errorCount < 6) {
 		sendEvent (name: "ErrHandling", value: "Handle comms error attempt ${state.errorCount} - $errMsg")
 		//getDevices()
 		//if (state.currentError == null) {
-		//	log.info "getDevices successful. token is good."
+		//	logInfo "getDevices successful. token is good."
 		//	return
 		//}
-		log.error "${errMsg} error while attempting getDevices.  Will attempt getToken"
+		logError "${errMsg} error while attempting getDevices.  Will attempt getToken"
 		getToken()
 		if (state.currentError == null || state.currentError == "none") {
-			log.info "getToken successful.  Token has been updated."
+			logInfo "getToken successful.  Token has been updated."
 			getDevices()
 			return
 		}
 	}
     else {
-		log.error "checkError:  No auto-correctable errors or exceeded Token request count."
+		logError "checkError:  No auto-correctable errors or exceeded Token request count."
         send("error ${errMsg}, count is ${state.errorCount} couldnt fix it")
 	}
-	log.error "checkError residual:  ${state.currentError}"
+	logError "checkError residual:  ${state.currentError}"
 }
 //	----- CHILD CALLED TASKS -----
 def removeChildDevice(alias, deviceNetworkId) {

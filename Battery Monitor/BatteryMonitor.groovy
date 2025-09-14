@@ -1,3 +1,5 @@
+import common.LoggingUtils
+
 definition(
     name: "Simple Battery Monitor",
     namespace: "tljungber",
@@ -13,15 +15,21 @@ preferences {
         section {
             paragraph "Hello, world!"
         }
+        section("Logging") {
+            input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false
+            input name: "traceEnable", type: "bool", title: "Enable trace logging", defaultValue: false
+        }
     }
 }
 
 def installed() {
-    log.trace "installed()"
+    logTrace "installed()"
+    if (logEnable || traceEnable) runIn(1800, logsOff)
 }
 
 def updated() {
-    log.trace "updated()"
+    logTrace "updated()"
+    if (logEnable || traceEnable) runIn(1800, logsOff)
 }
 
 def uninstalled() {}
