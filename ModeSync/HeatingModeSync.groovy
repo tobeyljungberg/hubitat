@@ -22,23 +22,10 @@ preferences {
             input "restoreModePreference", "bool", title: "Restore previous heating mode?", defaultValue: true, required: true
         }
         section("Logging Options") {
-            input "enableDebugLogging", "bool", title: "Enable Debug Logging?", defaultValue: false, required: true
+            input "prefLogLevel", "enum", title: "Log Level", 
+                options: ["error", "warn", "info", "debug"], defaultValue: "info", 
+                required: true, displayDuringSetup: true
         }
-    }
-}
-
-// Logging helper function
-private logIt(String level, String msg) {
-    if(level == "debug") {
-        if (enableDebugLogging) {
-            log.debug msg
-        }
-    } else if (level == "info") {
-        log.info msg
-    } else if (level == "warn") {
-        log.warn msg
-    } else if (level == "error") {
-        log.error msg
     }
 }
 
@@ -58,11 +45,16 @@ def uninstalled() {
 }
 
 def initialize() {
-    logIt("debug", "Current location mode is: ${location.mode}")
-    logIt("debug", "Current Evohome mode is: ${syncdevice.currentValue("thermostatMode")}")
+    logIt("info", "Current location mode is: ${location.mode}")
+    logIt("info", "Current Evohome mode is: ${syncdevice.currentValue("thermostatMode")}")
     logIt("debug", "Clearing old subscriptions")
     unsubscribe()
     subscribe(location, "mode", modeEventHandler)
+
+    addInUseGlobalVar("EvohomeRequestPoll")
+	addInUseGlobalVar("EvohomeLastPolled")
+	
+    logIt("info", "App started")
 }
 
 def modeEventHandler(evt) {
@@ -73,23 +65,67 @@ def modeEventHandler(evt) {
             if (currentMode == "off" || currentMode == "away") {
                 logIt("info", "Skipping heating mode change as heating mode is ${currentMode}")
             } else {
+                // Tell evohome connect to poll for latest values
+                //Get current timestamp
+                def preTimeObj = getGlobalVar("EvohomeLastPolled")
+				def prevalue = preTimeObj?.value?.toString()
+                logIt("debug", "preTime is ${prevalue}")
+                //Trigger Poll
+                setGlobalVar("EvohomeRequestPoll", "true")
+                //Wait for Poll to complete
+                pauseExecution(15000)
+                //Compare values to see if poll has updated.
+                def postTimeObj = getGlobalVar("EvohomeLastPolled")
+				def postvalue = postTimeObj?.value?.toString()
+                logIt("debug", "postTime is ${postvalue}")
+                if (prevalue < postvalue) {
+                logIt("debug", "Poll successful, updating heating mode")
+                // Decide which mode to restore based on the config switch
                 // Store the current mode before switching to away
                 state.previousHeatingMode = currentMode
                 logIt("info", "Heating mode was ${currentMode} and location mode changed to Away. Storing previous mode and setting heating to away.")
                 syncdevice.setThermostatMode('away')
+                }
+                else if (prevalue >= postvalue) {
+                        logIt("error", "Poll failed, not updating heating mode")
+                    }
             }
         } else { // Not Away
             if (currentMode == "off") {
                 logIt("info", "Skipping heating mode change as heating mode is ${currentMode}")
             } else if (currentMode == "away") {
-                // Decide which mode to restore based on the config switch
+                
                 def restoreMode = restoreModePreference ? (state.previousHeatingMode ?: 'auto') : 'auto'
                 logIt("info", "Heating mode was away and location mode changed to ${location.mode}. Setting heating to ${restoreMode}.")
                 syncdevice.setThermostatMode(restoreMode)
                 state.previousHeatingMode = null
+                }
+                    
             }
         }
-    } catch (Exception e) {
+     catch (Exception e) {
         logIt("error", "Error in modeEventHandler: ${e.message}")
+    }
+}
+
+// Logging helper function modeled after Evohome Heating Zone
+private logIt(String level, String msg) {
+    def levels = [ "error": 1, "warn": 2, "info": 3, "debug": 4 ]
+    def configuredLevel = (settings.prefLogLevel ?: "info").toLowerCase()
+    if (levels[level] <= levels[configuredLevel]) {
+        switch(level) {
+            case "error":
+                log.error msg
+                break
+            case "warn":
+                log.warn msg
+                break
+            case "info":
+                log.info msg
+                break
+            case "debug":
+                log.debug msg
+                break
+        }
     }
 }
