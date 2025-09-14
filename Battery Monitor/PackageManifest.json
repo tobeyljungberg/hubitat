@@ -1,0 +1,20 @@
+{
+  "packageName": "Simple Battery Monitor",
+  "version": "1.0.0",
+  "releaseNotes": "Initial release",
+  "minimumHEVersion": "2.3",
+  "category": "Utility",
+  "tags": "Tools & Utilities",
+  "author": "Tobey Ljungberg",
+  "apps": [
+    {
+      "id": "d1be6e90-2746-4dee-8e4e-8ce604c059be",
+      "name": "Simple Battery Monitor",
+      "namespace": "tljungber",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/Battery%20Monitor/BatteryMonitor.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": false
+    }
+  ]
+}
