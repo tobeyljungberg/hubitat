@@ -1,0 +1,31 @@
+{
+  "packageName": "Evohome",
+  "version": "0.10.0",
+  "releaseNotes": "v0.10.0 Reduced hub load by throttling duplicate global poll triggers and optimizing schedule/switchpoint processing for child updates.",
+  "minimumHEVersion": "2.3",
+  "category": "Convenience",
+  "tags": "Convenience",
+  "author": "Tobey Ljungberg",
+  "apps": [
+    {
+      "id": "6df85956-e5e2-4e67-a86f-9d0d8f03d37c",
+      "name": "Evohome (Connect)",
+      "namespace": "tljungberg",
+      "version": "0.10.0",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/EvoHome/EvoHomeConnect.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": true
+    }
+  ],
+  "drivers": [
+    {
+      "id": "6ee69a80-f4af-41fd-b70f-ad74dfec22a8",
+      "name": "Evohome Heating Zone",
+      "namespace": "tljungberg",
+      "version": "0.10.0",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/EvoHome/EvoHomeHeatingZone.groovy",
+      "required": true
+    }
+  ]
+}
