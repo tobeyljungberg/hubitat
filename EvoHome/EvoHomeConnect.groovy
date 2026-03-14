@@ -240,6 +240,14 @@ void handleAppTouch(evt) {
 
 void globalVarHandler(evt) {
     if (evt.value?.toString()?.toLowerCase() == "true") {
+        def minPollGapMs = Math.max(5000, ((atomicState.evohomeUpdateRefreshTime ?: 3) * 1000) as Integer)
+        def lastPolled = getGlobalVar("EvohomeLastPolled")
+        if (lastPolled?.toString()?.isNumber() && (now() - lastPolled.toString().toLong()) < minPollGapMs) {
+            logMessage("debug", "${app.label}: globalVarHandler() - Skipping duplicate poll request within ${minPollGapMs} ms window.")
+            setGlobalVar("EvohomeRequestPoll", "false")
+            return
+        }
+
         logMessage("info", "${app.label}: globalVarHandler() - Global variable EvohomeRequestPoll is true. Triggering zone update.")
         poll(0)
         def currentTime = now()
@@ -316,7 +324,10 @@ void updateChildDeviceConfig() {
 
 void updateChildDevice(onlyZoneId=-1) {
 	logMessage("debug", "${app.label}: updateChildDevice(${onlyZoneId})")
-	
+
+	def schedulesByDni = [:]
+	(atomicState.evohomeSchedules ?: []).each { schedulesByDni[it.dni] = it.schedule }
+
 	atomicState.evohomeStatus.each { loc ->
 		loc.gateways.each { gateway ->
 			gateway.temperatureControlSystems.each { tcs ->
@@ -325,10 +336,8 @@ void updateChildDevice(onlyZoneId=-1) {
 						def dni = generateDni(loc.locationId, gateway.gatewayId, tcs.systemId, zone.zoneId)
 						def d = getChildDevice(dni)
 						if(d) {
-							def schedule = atomicState.evohomeSchedules.find { it.dni == dni}
-							def currSw = getCurrentSwitchpoint(schedule.schedule)
-							def nextSw = getNextSwitchpoint(schedule.schedule)
-	
+							def switchpoints = getCurrentAndNextSwitchpoint(schedulesByDni[dni])
+
 							def values = [
 								'temperature': formatTemperature(zone?.temperatureStatus?.temperature),
 								'heatingSetpoint': formatTemperature(zone?.heatSetpointStatus?.targetTemperature),
@@ -336,9 +345,9 @@ void updateChildDevice(onlyZoneId=-1) {
 								'thermostatSetpointMode': formatSetpointMode(zone?.heatSetpointStatus?.setpointMode),
 								'thermostatSetpointUntil': zone?.heatSetpointStatus?.until,
 								'thermostatMode': formatThermostatMode(tcs?.systemModeStatus?.mode),
-								'scheduledSetpoint': formatTemperature(currSw.temperature),
-								'nextScheduledSetpoint': formatTemperature(nextSw.temperature),
-								'nextScheduledTime': nextSw.time
+								'scheduledSetpoint': switchpoints?.current ? formatTemperature(switchpoints.current.temperature) : null,
+								'nextScheduledSetpoint': switchpoints?.next ? formatTemperature(switchpoints.next.temperature) : null,
+								'nextScheduledTime': switchpoints?.next?.time
 							]
 							logMessage("debug", "${app.label}: updateChildDevice(): Updating Device with DNI: ${dni} with data: ${values}")
 							d.generateEvent(values)
@@ -934,52 +943,60 @@ private formatThermostatMode(mode) {
   
 private getCurrentSwitchpoint(schedule) {
 	logMessage("debug", "${app.label}: getCurrentSwitchpoint()")
-	
-	Calendar c = new GregorianCalendar()
-	def ScheduleToday = schedule.dailySchedules.find { it.dayOfWeek == c.getTime().format("EEEE", location.timeZone) }
-	
-	ScheduleToday.switchpoints.sort {it.timeOfDay}
-	ScheduleToday.switchpoints.reverse(true)
-	def currentSwitchPoint = ScheduleToday.switchpoints.find {it.timeOfDay < c.getTime().format("HH:mm:ss", location.timeZone)}
-	
-	if (!currentSwitchPoint) {
-		logMessage("debug", "${app.label}: getCurrentSwitchpoint(): No current switchpoints today, so must look to yesterday's schedule.")
-		c.add(Calendar.DATE, -1 )
-		def ScheduleYesterday = schedule.dailySchedules.find { it.dayOfWeek == c.getTime().format("EEEE", location.timeZone) }
-		ScheduleYesterday.switchpoints.sort {it.timeOfDay}
-		ScheduleYesterday.switchpoints.reverse(true)
-		currentSwitchPoint = ScheduleYesterday.switchpoints[0]
-	}
-	
-	def localDateStr = c.getTime().format("yyyy-MM-dd'T'", location.timeZone) + currentSwitchPoint.timeOfDay + c.getTime().format("XX", location.timeZone)
-	def isoDateStr = new Date().parse("yyyy-MM-dd'T'HH:mm:ssXX", localDateStr).format("yyyy-MM-dd'T'HH:mm:ssXX", TimeZone.getTimeZone('UTC'))
-	currentSwitchPoint << [ 'time': isoDateStr ]
-	logMessage("debug", "${app.label}: getCurrentSwitchpoint(): Current Switchpoint: ${currentSwitchPoint}")
-	
-	return currentSwitchPoint
+	return getCurrentAndNextSwitchpoint(schedule)?.current
 }
  
 private getNextSwitchpoint(schedule) {
 	logMessage("debug", "${app.label}: getNextSwitchpoint()")
-	
-	Calendar c = new GregorianCalendar()
-	def ScheduleToday = schedule.dailySchedules.find { it.dayOfWeek == c.getTime().format("EEEE", location.timeZone) }
-	
-	ScheduleToday.switchpoints.sort {it.timeOfDay}
-	def nextSwitchPoint = ScheduleToday.switchpoints.find {it.timeOfDay > c.getTime().format("HH:mm:ss", location.timeZone)}
-	
-	if (!nextSwitchPoint) {
-		logMessage("debug", "${app.label}: getNextSwitchpoint(): No more switchpoints today, so must look to tomorrow's schedule.")
-		c.add(Calendar.DATE, 1 )
-		def ScheduleTmrw = schedule.dailySchedules.find { it.dayOfWeek == c.getTime().format("EEEE", location.timeZone) }
-		ScheduleTmrw.switchpoints.sort {it.timeOfDay}
-		nextSwitchPoint = ScheduleTmrw.switchpoints[0]
+	return getCurrentAndNextSwitchpoint(schedule)?.next
+}
+
+private getCurrentAndNextSwitchpoint(schedule) {
+	if (!schedule?.dailySchedules) {
+		return [current: null, next: null]
 	}
-	
-	def localDateStr = c.getTime().format("yyyy-MM-dd'T'", location.timeZone) + nextSwitchPoint.timeOfDay + c.getTime().format("XX", location.timeZone)
+
+	Calendar nowCal = new GregorianCalendar()
+	def nowTime = nowCal.getTime()
+	def currentDay = nowTime.format("EEEE", location.timeZone)
+	def currentClock = nowTime.format("HH:mm:ss", location.timeZone)
+
+	def scheduleToday = schedule.dailySchedules.find { it.dayOfWeek == currentDay }
+	def sortedTodaySwitchpoints = (scheduleToday?.switchpoints ?: []).sort { it.timeOfDay }
+
+	def currentSwitchPoint = sortedTodaySwitchpoints.reverse(true).find { it.timeOfDay < currentClock }
+	Calendar currentCal = (Calendar) nowCal.clone()
+	if (!currentSwitchPoint) {
+		logMessage("debug", "${app.label}: getCurrentAndNextSwitchpoint(): No current switchpoints today, using yesterday's schedule.")
+		currentCal.add(Calendar.DATE, -1)
+		def yesterday = currentCal.getTime().format("EEEE", location.timeZone)
+		def scheduleYesterday = schedule.dailySchedules.find { it.dayOfWeek == yesterday }
+		def sortedYesterdaySwitchpoints = (scheduleYesterday?.switchpoints ?: []).sort { it.timeOfDay }
+		currentSwitchPoint = sortedYesterdaySwitchpoints ? sortedYesterdaySwitchpoints[-1] : null
+	}
+
+	def nextSwitchPoint = sortedTodaySwitchpoints.find { it.timeOfDay > currentClock }
+	Calendar nextCal = (Calendar) nowCal.clone()
+	if (!nextSwitchPoint) {
+		logMessage("debug", "${app.label}: getCurrentAndNextSwitchpoint(): No more switchpoints today, using tomorrow's schedule.")
+		nextCal.add(Calendar.DATE, 1)
+		def tomorrow = nextCal.getTime().format("EEEE", location.timeZone)
+		def scheduleTomorrow = schedule.dailySchedules.find { it.dayOfWeek == tomorrow }
+		def sortedTomorrowSwitchpoints = (scheduleTomorrow?.switchpoints ?: []).sort { it.timeOfDay }
+		nextSwitchPoint = sortedTomorrowSwitchpoints ? sortedTomorrowSwitchpoints[0] : null
+	}
+
+	return [
+		current: addSwitchpointTime(currentSwitchPoint, currentCal),
+		next: addSwitchpointTime(nextSwitchPoint, nextCal)
+	]
+}
+
+private addSwitchpointTime(switchPoint, Calendar c) {
+	if (!switchPoint) {
+		return null
+	}
+	def localDateStr = c.getTime().format("yyyy-MM-dd'T'", location.timeZone) + switchPoint.timeOfDay + c.getTime().format("XX", location.timeZone)
 	def isoDateStr = new Date().parse("yyyy-MM-dd'T'HH:mm:ssXX", localDateStr).format("yyyy-MM-dd'T'HH:mm:ssXX", TimeZone.getTimeZone('UTC'))
-	nextSwitchPoint << [ 'time': isoDateStr ]
-	logMessage("debug", "${app.label}: getNextSwitchpoint(): Next Switchpoint: ${nextSwitchPoint}")
-	
-	return nextSwitchPoint
+	return [temperature: switchPoint.temperature, timeOfDay: switchPoint.timeOfDay, time: isoDateStr]
 }
