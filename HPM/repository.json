@@ -41,6 +41,16 @@
         "Tools & Utilities"
       ],
       "id": "d1be6e90-2746-4dee-8e4e-8ce604c059be"
+    },
+    {
+      "name": "Evohome",
+      "category": "Convenience",
+      "location": "https://raw.githubusercontent.com/tobeyljungberg/hubitat/main/EvoHome/PackageManifest.json",
+      "description": "Connect Hubitat to Honeywell Evohome systems and manage zone heating devices.",
+      "tags": [
+        "Convenience"
+      ],
+      "id": "6df85956-e5e2-4e67-a86f-9d0d8f03d37c"
     }
   ]
 }
